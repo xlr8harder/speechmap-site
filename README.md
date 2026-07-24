@@ -1,12 +1,12 @@
 # Adding a new model
 
-1. Scrape the new model with the `us_hard` dataset and analyze the results with the [LLM compliance tools](https://github.com/xlr8harder/llm-compliance) repo.
-2. Ensure `./analysis` is symlinked to the llm-compliance checkout `analysis` subdir.
+1. Collect and judge the new model with [speechmap-eval](https://github.com/xlr8harder/speechmap-eval).
+2. Keep `speechmap-data` as a sibling checkout, or set `SPEECHMAP_DATA_ROOT` to its path. `preprocess.py` reads production analyses from `$SPEECHMAP_DATA_ROOT/analysis`.
 3. Add model metadata to `model_metadata.json` (one JSON object per line).
 4. Install deps: `uv sync`.
 5. Generate the site: `uv run python preprocess.py`.
-6. View locally: `python3 -m http.server -d . 8000` then open http://localhost:8000/.
-7. Commit and push. Deployment happens automatically.
+6. Preview locally with `npm run dev` at http://localhost:8789/. For static-only iteration, `python3 -m http.server -d . 8000` is faster, but Function routes will not work.
+7. Commit the code/data checkpoints used for the build. Production deployment is a separate action from Git push.
 
 ## Build outputs
 - Runtime JSON (tracked):

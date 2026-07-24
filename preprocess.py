@@ -13,9 +13,14 @@ import html as htmlmod
 from urllib.parse import quote_plus
 from datetime import date
 import argparse
+from pathlib import Path
 
 # --- Configuration ---
-ANALYSIS_DIR = "../llm-compliance/analysis"
+REPO_ROOT = Path(__file__).resolve().parent
+DATA_ROOT = Path(
+    os.environ.get("SPEECHMAP_DATA_ROOT", REPO_ROOT.parent / "speechmap-data")
+).expanduser()
+ANALYSIS_DIR = str(DATA_ROOT / "analysis")
 MODEL_METADATA_FILE = "model_metadata.json"
 LAB_METADATA_FILE = "lab_metadata.jsonl"
 MODEL_METADATA_SKIP_FLAG = "skip"
@@ -2628,14 +2633,19 @@ def render_resources_page():
             "Formal data releases: packaged datasets of model responses and judge assessments, published periodically.",
         )
         + _resource_card(
-            "https://github.com/xlr8harder/llm-compliance",
-            "llm-compliance on GitHub",
-            "The complete, up-to-date working dataset — every response and judgment behind the current site — plus the evaluation harness that produces it (question sets, scraping, judging, and analysis tools).",
+            "https://github.com/xlr8harder/speechmap-data",
+            "speechmap-data on GitHub",
+            "The versioned model responses and production judgments behind the current site.",
         )
         + "<h3>Code</h3>"
         + _resource_card(
-            "https://github.com/xlr8harder/speechmap",
-            "speechmap on GitHub",
+            "https://github.com/xlr8harder/speechmap-eval",
+            "speechmap-eval on GitHub",
+            "The collection, judging, judge-training, and evaluation tools, with judge gold sets and adjudication data.",
+        )
+        + _resource_card(
+            "https://github.com/xlr8harder/speechmap-site",
+            "speechmap-site on GitHub",
             "This website: the static site generator and the aggregate data behind the pages you're reading.",
         )
         + "<h3>Writing &amp; Updates</h3>"

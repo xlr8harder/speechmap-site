@@ -372,7 +372,7 @@ wheels = [
 ]
 
 [[package]]
-name = "speechmap"
+name = "speechmap-site"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

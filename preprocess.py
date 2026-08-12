@@ -13,6 +13,7 @@ import html as htmlmod
 from urllib.parse import quote_plus
 from datetime import date
 import argparse
+import tempfile
 from pathlib import Path
 
 # --- Configuration ---
@@ -280,13 +281,13 @@ def lab_display_name(lab, lab_metadata):
     return lab_id
 
 
-def preprocess_us_hard_data(analysis_dir):
-    all_records = []
+def iter_preprocessed_us_hard_data(analysis_dir):
+    """Yield normalized analysis records without retaining the full corpus."""
     file_paths = glob(os.path.join(analysis_dir, "compliance_us_hard_*.jsonl"))
     print(f"\nFound {len(file_paths)} analysis files in {analysis_dir}")
     if not file_paths:
         print(f"Warning: No 'compliance_us_hard_*.jsonl' files found.")
-        return []
+        return
 
     processed_count = 0
     error_count = 0
@@ -428,8 +429,8 @@ def preprocess_us_hard_data(analysis_dir):
                         }
                         if error_class:
                             output_record["error_class"] = error_class
-                        all_records.append(output_record)
                         processed_count += 1
+                        yield output_record
                     except KeyError as e:
                         print(f"    ERR Proc Line {line_num+1} in {fname}: Missing key {e} - Rec: {rec}")
                         error_count += 1
@@ -441,7 +442,97 @@ def preprocess_us_hard_data(analysis_dir):
             error_count += 1
 
     print(f"\nPreprocessing finished. Processed: {processed_count}, Skipped Format: {skipped_id_format}, Errors: {error_count}")
-    return all_records
+
+
+def preprocess_us_hard_data(analysis_dir):
+    """Compatibility helper for callers that explicitly need all records."""
+    return list(iter_preprocessed_us_hard_data(analysis_dir))
+
+
+class StreamingThemeDetailWriter:
+    """Write theme artifacts incrementally, publishing only after validation."""
+
+    def __init__(self, output_dir):
+        cache_dir = os.path.dirname(output_dir) or "."
+        os.makedirs(cache_dir, exist_ok=True)
+        self.output_dir = output_dir
+        self.temp_dir = tempfile.mkdtemp(prefix="theme-details-", dir=cache_dir)
+        self._files = {}
+        self._counts = defaultdict(int)
+        self._keys_by_safe_id = {}
+        self._closed = False
+        self._published = False
+        self._compressed_dir = None
+
+    def add(self, record):
+        if self._closed:
+            raise RuntimeError("Cannot add records after closing theme detail writer")
+        grouping_key = record["grouping_key"]
+        safe_id = generate_safe_id(grouping_key)
+        previous_key = self._keys_by_safe_id.setdefault(safe_id, grouping_key)
+        if previous_key != grouping_key:
+            raise ValueError(
+                f"Theme filename collision: {previous_key!r} and {grouping_key!r} both map to {safe_id!r}"
+            )
+        handle = self._files.get(safe_id)
+        if handle is None:
+            path = os.path.join(self.temp_dir, f"{safe_id}.json")
+            handle = open(path, "w", encoding="utf-8")
+            handle.write('{"records":[')
+            self._files[safe_id] = handle
+        if self._counts[safe_id]:
+            handle.write(",")
+        json.dump(record, handle, ensure_ascii=False, separators=(",", ":"))
+        self._counts[safe_id] += 1
+
+    def close(self):
+        if self._closed:
+            return
+        for handle in self._files.values():
+            handle.write("]}")
+            handle.close()
+        self._files.clear()
+        self._closed = True
+
+    def publish(self):
+        self.close()
+        cache_dir = os.path.dirname(self.output_dir) or "."
+        self._compressed_dir = tempfile.mkdtemp(
+            prefix="theme-details-compressed-", dir=cache_dir
+        )
+        for filename in os.listdir(self.temp_dir):
+            if not filename.endswith(".json"):
+                continue
+            output_filename = f"{filename}.gz"
+            with open(os.path.join(self.temp_dir, filename), "rb") as source:
+                with gzip.open(
+                    os.path.join(self._compressed_dir, output_filename),
+                    "wb",
+                    compresslevel=9,
+                ) as destination:
+                    shutil.copyfileobj(source, destination)
+
+        os.makedirs(self.output_dir, exist_ok=True)
+        new_filenames = set(os.listdir(self._compressed_dir))
+        for filename in os.listdir(self.output_dir):
+            if filename.endswith(".json.gz") and filename not in new_filenames:
+                os.unlink(os.path.join(self.output_dir, filename))
+        for filename in new_filenames:
+            os.replace(
+                os.path.join(self._compressed_dir, filename),
+                os.path.join(self.output_dir, filename),
+            )
+        shutil.rmtree(self.temp_dir)
+        os.rmdir(self._compressed_dir)
+        self._published = True
+        return len(new_filenames)
+
+    def discard(self):
+        self.close()
+        if not self._published:
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
+            if self._compressed_dir:
+                shutil.rmtree(self._compressed_dir, ignore_errors=True)
 
 
 def calculate_summaries(all_records, model_metadata_dict, skipped_models=None):
@@ -3031,6 +3122,26 @@ def write_pair_template():
     _write_file(PAIR_TEMPLATE_FILE, render_pair_template())
 
 
+def _load_theme_detail_records(theme_key):
+    safe = generate_safe_id(theme_key)
+    gz_path = os.path.join(OUTPUT_THEME_DETAIL_DIR, f"{safe}.json.gz")
+    if not os.path.exists(gz_path):
+        return []
+    with gzip.open(gz_path, "rt", encoding="utf-8") as f:
+        payload = json.load(f)
+    return payload.get("records", [])
+
+
+def _render_theme_page_from_artifact(task):
+    """Render one theme in a recyclable worker to bound native Markdown memory."""
+    theme_key, domain = task
+    records = _load_theme_detail_records(theme_key)
+    safe = generate_safe_id(theme_key)
+    path = os.path.join(STATIC_THEMES_DIR, safe, "index.html")
+    _write_file(path, render_theme_detail(theme_key, domain, None, records))
+    return theme_key
+
+
 def generate_static_pages(model_meta_dict, summaries, data_by_theme, lab_standings, lab_metadata=None, include_theme_pages=True):
     # Models index
     os.makedirs(STATIC_MODELS_DIR, exist_ok=True)
@@ -3058,19 +3169,36 @@ def generate_static_pages(model_meta_dict, summaries, data_by_theme, lab_standin
 
     # Per-theme pages (use per-model stats + sample records from data_by_theme)
     if include_theme_pages:
-        for theme_key, records in data_by_theme.items():
-            safe = generate_safe_id(theme_key)
-            path = os.path.join(STATIC_THEMES_DIR, safe, "index.html")
-            # Determine domain: prefer from per-model stats
-            domain_guess = None
-            for model, tm in summaries["model_theme_summary"].items():
-                s = tm.get(theme_key)
-                if s and s.get("domain"):
-                    domain_guess = s.get("domain")
-                    break
-            per_model_rows = _summarize_theme_across_models(theme_key, summaries["model_theme_summary"])
-            # Render ALL records for full static detail (include all variations per model)
-            _write_file(path, render_theme_detail(theme_key, domain_guess, per_model_rows, records))
+        if data_by_theme is None:
+            # cmarkgfm's native allocations grow across a large number of render
+            # calls. Recycle one spawned worker periodically so each build has a
+            # deterministic memory ceiling without parallel write races.
+            from multiprocessing import get_context
+
+            tasks = [
+                (row["grouping_key"], row.get("domain"))
+                for row in summaries["question_theme_summary"]
+            ]
+            with get_context("spawn").Pool(processes=1, maxtasksperchild=8) as pool:
+                for _ in pool.imap(_render_theme_page_from_artifact, tasks):
+                    pass
+            theme_records = None
+        else:
+            theme_records = data_by_theme.items()
+        if theme_records is not None:
+            for theme_key, records in theme_records:
+                safe = generate_safe_id(theme_key)
+                path = os.path.join(STATIC_THEMES_DIR, safe, "index.html")
+                # Determine domain: prefer from per-model stats
+                domain_guess = None
+                for model, tm in summaries["model_theme_summary"].items():
+                    s = tm.get(theme_key)
+                    if s and s.get("domain"):
+                        domain_guess = s.get("domain")
+                        break
+                per_model_rows = _summarize_theme_across_models(theme_key, summaries["model_theme_summary"])
+                # Render ALL records for full static detail (include all variations per model)
+                _write_file(path, render_theme_detail(theme_key, domain_guess, per_model_rows, records))
 
     # Lab standings page
     os.makedirs(STATIC_LABS_DIR, exist_ok=True)
@@ -3351,30 +3479,16 @@ def generate_static_pages_from_artifacts(skip_theme_pages=False):
 
     # Per-theme pages (load gz on demand)
     if not skip_theme_pages:
-        for t in qts_all:
-            key = t.get("grouping_key")
-            if not key:
-                continue
-            safe = generate_safe_id(key)
-            gz_path = os.path.join(OUTPUT_THEME_DETAIL_DIR, f"{safe}.json.gz")
-            records = []
-            try:
-                if os.path.exists(gz_path):
-                    with gzip.open(gz_path, "rt", encoding="utf-8") as f:
-                        j = json.load(f)
-                    records = j.get("records", [])
-            except Exception as e:
-                print(f"Warning: Failed to read {gz_path}: {e}")
-            # Domain guess from model_theme_summary
-            domain_guess = None
-            for mid, themes in model_theme_summary.items():
-                s = themes.get(key)
-                if s and s.get("domain"):
-                    domain_guess = s.get("domain")
-                    break
-            out_path = os.path.join(STATIC_THEMES_DIR, safe, "index.html")
-            # Render ALL records for full static detail
-            _write_file(out_path, render_theme_detail(key, domain_guess, None, records))
+        from multiprocessing import get_context
+
+        tasks = [
+            (row.get("grouping_key"), row.get("domain"))
+            for row in qts_all
+            if row.get("grouping_key")
+        ]
+        with get_context("spawn").Pool(processes=1, maxtasksperchild=8) as pool:
+            for _ in pool.imap(_render_theme_page_from_artifact, tasks):
+                pass
 
     # Acknowledgments + Resources static pages
     _write_file(os.path.join("acknowledgments", "index.html"), render_acknowledgments_page())
@@ -3425,36 +3539,58 @@ def main():
     model_meta_dict = load_model_metadata(MODEL_METADATA_FILE)
     model_meta_included, skipped_model_meta = split_model_metadata(model_meta_dict)
     lab_meta_dict = load_lab_metadata(LAB_METADATA_FILE)
-    all_data = preprocess_us_hard_data(ANALYSIS_DIR)
+    skipped_model_ids = set(skipped_model_meta.keys())
+    counts = {"total": 0, "excluded": 0, "judgments": 0, "complete": 0}
+    theme_writer = None if args.no_themes else StreamingThemeDetailWriter(OUTPUT_THEME_DETAIL_DIR)
 
-    if not all_data:
+    def records_for_build():
+        for record in iter_preprocessed_us_hard_data(ANALYSIS_DIR):
+            counts["total"] += 1
+            if record.get("model") in skipped_model_ids:
+                counts["excluded"] += 1
+                continue
+            if theme_writer is not None:
+                theme_writer.add(record)
+            if record.get("model") in model_meta_included:
+                counts["judgments"] += 1
+                if record.get("compliance") == "COMPLETE":
+                    counts["complete"] += 1
+            yield record
+
+    try:
+        summaries = calculate_summaries(
+            records_for_build(), model_meta_included, skipped_models=skipped_model_ids
+        )
+    except Exception:
+        if theme_writer is not None:
+            theme_writer.discard()
+        raise
+
+    if counts["total"] == 0:
+        if theme_writer is not None:
+            theme_writer.discard()
         print("No data processed. Exiting.")
         sys.exit(0)
 
-    total_records = len(all_data)
-    print(f"\nTotal records processed: {total_records}")
+    print(f"\nTotal records processed: {counts['total']}")
     if skipped_model_meta:
-        skipped_models = set(skipped_model_meta.keys())
-        before = len(all_data)
-        all_data = [r for r in all_data if r.get("model") not in skipped_models]
         print(
-            f"Applied metadata skip filter: excluded {before - len(all_data)} records from "
-            f"{len(skipped_models)} skipped model(s)."
+            f"Applied metadata skip filter: excluded {counts['excluded']} records from "
+            f"{len(skipped_model_ids)} skipped model(s)."
         )
 
     # Calculate summaries - check for failure (missing metadata)
-    skipped_model_ids = set(skipped_model_meta.keys())
-    summaries = calculate_summaries(all_data, model_meta_included, skipped_models=skipped_model_ids)
     if summaries is None:
+        if theme_writer is not None:
+            theme_writer.discard()
         print("\nAborting preprocessing due to missing model metadata.")
         sys.exit(1) # Exit script if metadata was missing
 
     # Calculate overall stats
     num_models = len(summaries["model_summary"])
     num_themes = len(summaries["question_theme_summary"])
-    valid_models = set(model_meta_included.keys())
-    num_judgments = len([i for i in all_data if i["model"] in valid_models])
-    num_complete = sum([1 for i in all_data if i["model"] in valid_models and i["compliance"] == "COMPLETE"])
+    num_judgments = counts["judgments"]
+    num_complete = counts["complete"]
 
     stats_summary = {"models": num_models, "themes": num_themes, "judgments": num_judgments, "complete": num_complete}
     print("Calculated Stats:", stats_summary)
@@ -3462,35 +3598,11 @@ def main():
     # Lab standings (last N months) derived from summary + metadata (rendered only)
     lab_standings = compute_lab_standings(summaries["model_summary"], model_meta_included)
 
-    # Group data by grouping_key for saving individual files (optional)
-    data_by_theme = defaultdict(list)
     if not args.no_themes:
-        for record in all_data:
-            # Only include records for models that HAVE metadata
-            if record["model"] in valid_models:
-                data_by_theme[record["grouping_key"]].append(record)
-
-    if not args.no_themes:
-        num_theme_files = len(data_by_theme)
-        print(f"\nPreparing to save {num_theme_files} theme detail files to '{OUTPUT_THEME_DETAIL_DIR}/'.")
-
-        os.makedirs(OUTPUT_THEME_DETAIL_DIR, exist_ok=True)
-
-        saved_files_count = 0
-        failed_files_count = 0
-        for grouping_key, records in data_by_theme.items():
-            safe_filename_key = generate_safe_id(grouping_key)
-            output_filename = os.path.join(OUTPUT_THEME_DETAIL_DIR, f"{safe_filename_key}.json.gz")
-            if save_theme_detail_file(output_filename, records):
-                saved_files_count += 1
-            else:
-                failed_files_count += 1
-
-        print(f"\nTheme detail file saving complete. Saved: {saved_files_count}, Failed: {failed_files_count}")
-
-        if failed_files_count > 0:
-            print("ERROR: Failed to save one or more theme detail files. Aborting metadata generation.")
-            sys.exit(1)
+        saved_files_count = theme_writer.publish()
+        print(
+            f"\nTheme detail file saving complete. Saved: {saved_files_count}, Failed: 0"
+        )
 
     # Phase 1: Save split data artifacts
     # 1) Core metadata (small)
@@ -3521,7 +3633,7 @@ def main():
     domain_slugs = generate_static_pages(
         model_meta_included,
         summaries,
-        data_by_theme,
+        None,
         lab_standings,
         lab_metadata=lab_meta_dict,
         include_theme_pages=not args.no_themes,

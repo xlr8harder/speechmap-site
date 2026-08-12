@@ -1,16 +1,16 @@
 # Repository Guidelines
 
 ## Project Structure & Modules
-- `/preprocess.py` — static generator; writes `index.html`, `acknowledgments/`, `timeline/`, `models/`, `themes/`.
+- `/preprocess.py` — static generator; writes the complete deployable site under ignored `/dist/`, never into the source root.
 - `/script.js` — hydrates the data tables (sort/filter, owned code — no table library) and the timeline (Chart.js).
 - `/style.css` — site styles; keep lean, no SPA-only rules. Verdict colors live in CSS vars (`--v-complete`, `--v-evasive`, `--v-denial`, `--v-error`).
-- `/data/` — runtime JSON used by the client (e.g., `metadata-core.json`). Keep tracked.
+- `/dist/data/` — generated runtime JSON used by the client (e.g., `metadata-core.json`) and theme shards. Do not commit.
 - `/.cache/` — build-only artifacts for static generation: `question-theme-summary/`, `model-themes/`, `theme_details/`. Do not commit.
 - `/functions/` — Cloudflare Pages Functions (file path = route). The pair
   page `/themes/<t>/m/<model>/` is edge-rendered here from shard assets;
   its HTML chrome comes from build-generated `data/pair-template.html`, so
   never hand-write site chrome in JS.
-- `/data/theme-shards/` — per-theme response HTML fragments,
+- `/dist/data/theme-shards/` — per-theme response HTML fragments,
   `<theme>.<k>.json` with `k = fnv1a(model_slug) % 8` (Python `_fnv1a` and
   the Function's `fnv1a` must stay in sync), plus `<theme>.meta.json`.
 - `/tools/` — dev utilities (e.g., `screenshot.py` for design review captures).
@@ -29,14 +29,14 @@ capture only the top of the page.
 ## Build, Test, and Run
 - Install deps: `uv sync` (includes the dev group: playwright, pytest).
   One-time browser setup for tests/screenshots: `uv run playwright install chromium`.
-- Generate site: `uv run python preprocess.py` (overwrites generated pages; slow — full data rebuild).
+- Generate site: `uv run python preprocess.py` (recreates ignored `/dist/`; slow — full data rebuild).
 - Artifact-only rebuild: `uv run python preprocess.py --static-only` (reads from `/.cache/` artifacts).
   Add `--no-themes` while iterating to skip the ~500 theme detail pages (much faster);
   do a full `--static-only` pass before handing off, since head/foot changes touch every page.
-- Local preview: `npm install` once, then `npm run dev` (wrangler on
+- Local preview: `npm install` once, then `npm run dev` (serves `/dist/` with wrangler on
   `http://localhost:8789/`). This emulates Cloudflare Pages fully, including
   the pair-page Function at `/themes/<t>/m/<model>/`. A plain
-  `python3 -m http.server -d . 8000` still works for static-only iteration,
+  `python3 -m http.server -d dist 8000` still works for static-only iteration,
   but pair URLs 404 there — don't mistake that for a bug.
 - Screenshots for design review: `uv run python tools/screenshot.py [paths…] [--mobile] [--full-page]`
   → writes to `.screenshots/` (gitignored). Capture before/after for any UI change.
@@ -120,7 +120,7 @@ capture only the top of the page.
 ## Agent Workflow & Commit Policy
 - Before any `git add`/`git commit`, post a brief summary of intended changes and findings (benchmarks, impacts) and ask for approval.
 - Before asking for commit approval on UI changes, stand up a local server
-  (`python3 -m http.server -d . 8000`) and tell the user the URL so they can
+  (`python3 -m http.server -d dist 8000`) and tell the user the URL so they can
   review the rendered result themselves.
 - For multi-step design/refactor efforts, keep a temporary `WORKLIST.md` in the
   repo root (never committed) with decisions and open items; delete it when done.
@@ -128,9 +128,9 @@ capture only the top of the page.
 - Commit minimal, scoped changes. Avoid bundling unrelated edits.
 - `git push` is slow here (large regenerated-page diffs) — run it in the
   background and continue working; verify it landed before ending the session.
-- Generated pages: only commit regenerated static HTML when approved or paired with approved generator updates.
+- Generated pages remain under ignored `/dist/`; commit the generator and source assets, not generated HTML.
 
 ## Security & Agent Notes
 - Do not introduce client-side HTML-enabled markdown. Keep linkify only.
 - Preserve static-first architecture; no SPA/Alpine reintroduction.
-- Agents: use `apply_patch`; modify generators over generated HTML; keep `/data/` intact and exclude `/.cache/` from VCS.
+- Agents: use `apply_patch`; modify generators over generated HTML; keep `/dist/` and `/.cache/` excluded from VCS.

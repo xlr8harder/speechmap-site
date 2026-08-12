@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Screenshot rendered site pages for design review.
 
-Serves the repo root on an ephemeral port and captures pages with Playwright.
+Serves the generated dist tree on an ephemeral port and captures pages with Playwright.
 
 Usage:
     uv run python tools/screenshot.py                      # default page set
@@ -22,6 +22,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+BUILD_ROOT = REPO_ROOT / "dist"
 DEFAULT_PAGES = ["/", "/labs/", "/models/", "/themes/", "/timeline/"]
 
 
@@ -31,7 +32,9 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
 
 def start_server():
-    handler = functools.partial(QuietHandler, directory=str(REPO_ROOT))
+    if not (BUILD_ROOT / "index.html").exists():
+        raise SystemExit("No dist build found; run `uv run python preprocess.py` first")
+    handler = functools.partial(QuietHandler, directory=str(BUILD_ROOT))
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server, f"http://127.0.0.1:{server.server_address[1]}"

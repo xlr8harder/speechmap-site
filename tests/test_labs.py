@@ -3,6 +3,7 @@
 
 def test_leaderboard_links_to_lab_page(page, site_url):
     page.goto(site_url + "/labs/")
+    assert page.locator(".lab-leaderboard-head h2").inner_text() == "SpeechMap.AI Lab Leaderboard"
     first = page.locator(".leaderboard-table td.lab-name a").first
     name = first.inner_text().strip()
     first.click()

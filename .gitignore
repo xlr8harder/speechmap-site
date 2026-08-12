@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 node_modules/
 .wrangler/
+/dist/
 
 # Generated artifacts to exclude
 .cache/

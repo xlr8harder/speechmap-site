@@ -344,6 +344,7 @@
 {"model_identifier": "inclusionai/ring-2.6-1t", "creator": "inclusionai", "model_name": "ring-2.6-1t", "model_family": "ring-2.6", "release_date": "2026-05-08", "reasoning_model": true, "notes": "Reasoning traces observed in most successful responses."}
 {"model_identifier": "qwen/qwen3.7-max", "creator": "alibaba", "model_name": "qwen3.7-max", "model_family": "qwen3.7", "release_date": "2026-05-21", "reasoning_model": false, "notes": ""}
 {"model_identifier": "qwen/qwen3.7-max-reasoning", "creator": "alibaba", "model_name": "qwen3.7-max", "model_family": "qwen3.7", "release_date": "2026-05-21", "reasoning_model": true, "notes": ""}
+{"model_identifier": "qwen/qwen3.8-max", "creator": "alibaba", "model_name": "qwen3.8-max", "model_family": "qwen3.8", "release_date": "2026-08-03", "reasoning_model": true, "notes": "Reasoning is mandatory."}
 {"model_identifier": "qwen/qwen3.7-flash", "creator": "alibaba", "model_name": "qwen3.7-flash", "model_family": "qwen3.7", "release_date": "2026-07-27", "reasoning_model": false, "notes": ""}
 {"model_identifier": "qwen/qwen3.7-flash-reasoning", "creator": "alibaba", "model_name": "qwen3.7-flash", "model_family": "qwen3.7", "release_date": "2026-07-27", "reasoning_model": true, "notes": "Reasoning enabled via OpenRouter."}
 {"model_identifier": "qwen/qwen3.7-plus", "creator": "alibaba", "model_name": "qwen3.7-plus", "model_family": "qwen3.7", "release_date": "2026-06-02", "reasoning_model": false, "notes": ""}

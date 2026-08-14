@@ -380,3 +380,4 @@
 {"model_identifier": "deepseek/deepseek-v4-pro-0813", "creator": "deepseek", "model_name": "deepseek-v4-pro-0813", "model_family": "deepseek-v4-pro", "release_date": "2026-08-13", "reasoning_model": false, "notes": ""}
 {"model_identifier": "deepseek/deepseek-v4-pro-0813-reasoning", "creator": "deepseek", "model_name": "deepseek-v4-pro-0813", "model_family": "deepseek-v4-pro", "release_date": "2026-08-13", "reasoning_model": true, "notes": "Reasoning enabled via OpenRouter."}
 {"model_identifier": "x-ai/grok-4.6", "creator": "x-ai", "model_name": "grok-4.6", "model_family": "grok-4.6", "release_date": "2026-08-12", "reasoning_model": true, "notes": "Reasoning is mandatory."}
+{"model_identifier": "google/gemini-3.7-flash", "creator": "google", "model_name": "gemini-3.7-flash", "model_family": "gemini-3.7-flash", "release_date": "2026-08-13", "reasoning_model": true, "notes": "Reasoning is mandatory."}

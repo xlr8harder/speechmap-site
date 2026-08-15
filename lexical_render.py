@@ -493,6 +493,13 @@ Click any word to see this model using it.</p>
             f"{SITE_BASE_URL}{VOCAB_BASE}/lab/{lab}/", body,
             f"How {lab_full}'s vocabulary has shifted version to version."))
 
+    # prune model pages whose model left the build (skip-flagged, renamed…)
+    valid_slugs = {m["slug"] for m in models}
+    for d in (vocab_out / "m").iterdir():
+        if d.is_dir() and d.name not in valid_slugs:
+            shutil.rmtree(d)
+            print(f"pruned stale vocab page: m/{d.name}")
+
     # ---- client data + assets
     data_out = dist / "data" / "vocab"
     if data_out.exists():

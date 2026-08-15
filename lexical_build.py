@@ -187,6 +187,12 @@ def build(site_root=None, data_root=None):
         cache = load_cache(os.path.join(cache_dir, fname))
         mid = cache["model"]
         meta = model_meta.get(mid)
+        # honor the metadata skip flag exactly as the site build does — a
+        # skip-flagged model (e.g. one whose judging run is incomplete) must
+        # not appear in the vocab section even if a cache exists for it
+        skip = (meta or {}).get("skip", False)
+        if skip is True or (isinstance(skip, str) and skip.strip().lower() in ("1", "true", "yes", "y", "on")) or (isinstance(skip, (int, float)) and skip):
+            continue
         rel = meta.get("release_date") if meta else None
         try:
             rel = date.fromisoformat(rel) if rel else None

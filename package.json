@@ -6,6 +6,6 @@
     "wrangler": "^4.107.0"
   },
   "scripts": {
-    "dev": "wrangler pages dev dist --port 8789"
+    "dev": "wrangler pages dev dist --port 8789 --compatibility-date=2026-07-01"
   }
 }

@@ -1280,6 +1280,7 @@ def _page_head(title, canonical_url, depth=0, active_tab=None, description=None)
     themes_active = "active" if active_tab == "themes" else ""
     timeline_active = "active" if active_tab == "timeline" else ""
     resources_active = "active" if active_tab == "resources" else ""
+    experiments_active = "active" if active_tab == "experiments" else ""
     return f"""<!DOCTYPE html>
 <html lang=\"en\"><head>
 <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
@@ -1303,6 +1304,7 @@ def _page_head(title, canonical_url, depth=0, active_tab=None, description=None)
       <button onclick=\"location.assign('/timeline/')\" class=\"{timeline_active}\">Timeline</button>
       <button onclick=\"location.assign('/models/')\" class=\"{models_active}\">Models</button>
       <button onclick=\"location.assign('/themes/')\" class=\"{themes_active}\">Themes</button>
+      <button onclick=\"location.assign('/experiments/')\" class=\"{experiments_active}\">Experiments</button>
       <button onclick=\"location.assign('/resources/')\" class=\"{resources_active}\">Resources &amp; Data</button>
     </nav>
   </div>
@@ -1690,6 +1692,20 @@ def render_home_page(stats, theme_summary=None, lab_standings=None, lab_metadata
             "</div>"
         )
 
+    experiments_html = ""
+    if (BUILD_ROOT / "experiments").is_dir() or (
+            REPO_ROOT / ".cache" / "lexical-artifacts").is_dir():
+        experiments_html = (
+            '<div class="home-section">'
+            '<div class="home-module-head"><h3>Experiments</h3></div>'
+            '<a class="post-card" href="/experiments/vocab/">'
+            '<span class="post-title">New: Lexical Fingerprints</span>'
+            '<span class="post-desc">The words each model overuses, which models sound alike, '
+            'how lab vocabularies drift version to version — and which stock character names '
+            'give a model away.</span></a>'
+            "</div>"
+        )
+    substack_html = experiments_html + substack_html
 
     body = (
         # Full-width hero with map background
@@ -2840,7 +2856,15 @@ def render_resources_page():
         "  <p class=\"hero-subtitle\">Our data, code, and writing — and how to support the project</p>"
         "</div>"
         "<div class=\"leaderboard-content\"><div class=\"resources-content\">"
-        "<h3>Data</h3>"
+        "<h3>Experiments</h3>"
+        + _resource_card(
+            "/experiments/",
+            "SpeechMap Experiments",
+            "Side studies built on the corpus — starting with Lexical Fingerprints: "
+            "the words each model overuses, and how model language drifts over time.",
+            external=False,
+        )
+        + "<h3>Data</h3>"
         + _resource_card(
             "https://huggingface.co/collections/xlr8harder/speechmap",
             "SpeechMap collection on Hugging Face",
@@ -3377,6 +3401,22 @@ def generate_sitemap_and_robots(model_summary, theme_keys, lab_keys=None, domain
     theme_safes = [generate_safe_id(key) for key in theme_keys]
     for safe in theme_safes:
         core.append((f"{SITE_BASE_URL}/themes/{safe}/", today_iso))
+    vocab_index = str(REPO_ROOT / ".cache" / "lexical-artifacts" / "models.json.gz")
+    if os.path.exists(vocab_index):
+        try:
+            with gzip.open(vocab_index, "rt", encoding="utf-8") as vh:
+                vocab_models = json.load(vh)
+            core.append((f"{SITE_BASE_URL}/experiments/", today_iso))
+            core.append((f"{SITE_BASE_URL}/experiments/vocab/", today_iso))
+            for vm in vocab_models:
+                core.append((f"{SITE_BASE_URL}/experiments/vocab/m/{vm['slug']}/", today_iso))
+            lineage_art = str(REPO_ROOT / ".cache" / "lexical-artifacts" / "lineages.json.gz")
+            if os.path.exists(lineage_art):
+                with gzip.open(lineage_art, "rt", encoding="utf-8") as lh:
+                    for vlab in sorted(json.load(lh)):
+                        core.append((f"{SITE_BASE_URL}/experiments/vocab/lab/{vlab}/", today_iso))
+        except Exception as exc:
+            print(f"sitemap: skipping experiments URLs ({exc})")
     _write_urlset("sitemap-core.xml", core)
 
     # Pair pages, chunked under the 50k-URL sitemap limit.
@@ -3629,6 +3669,8 @@ def main():
     parser.add_argument('--static-only', action='store_true')
     parser.add_argument('--no-themes', action='store_true')
     parser.add_argument('--substack-refresh', action='store_true')
+    parser.add_argument('--no-vocab', action='store_true',
+                        help='skip the Lexical Fingerprints (experiments/vocab) build')
     args, _ = parser.parse_known_args()
 
     prepare_build_root(clean=not (args.labs_only or args.substack_refresh))
@@ -3654,6 +3696,9 @@ def main():
     if args.static_only:
         try:
             generate_static_pages_from_artifacts(skip_theme_pages=args.no_themes)
+            if not args.no_vocab and (REPO_ROOT / ".cache" / "lexical-artifacts").is_dir():
+                import lexical_render
+                lexical_render.render_all()
             print("Static regeneration complete.")
         except Exception as e:
             print(f"Static regeneration failed: {e}")
@@ -3666,6 +3711,10 @@ def main():
     skipped_model_ids = set(skipped_model_meta.keys())
     counts = {"total": 0, "excluded": 0, "judgments": 0, "complete": 0}
     theme_writer = None if args.no_themes else StreamingThemeDetailWriter(OUTPUT_THEME_DETAIL_DIR)
+    vocab_collector = None
+    if not args.no_vocab:
+        from lexical import LexicalCollector
+        vocab_collector = LexicalCollector(ANALYSIS_DIR)
 
     def records_for_build():
         for record in iter_preprocessed_us_hard_data(ANALYSIS_DIR):
@@ -3673,6 +3722,8 @@ def main():
             if record.get("model") in skipped_model_ids:
                 counts["excluded"] += 1
                 continue
+            if vocab_collector is not None:
+                vocab_collector.observe(record)
             if theme_writer is not None:
                 theme_writer.add(record)
             if record.get("model") in model_meta_included:
@@ -3709,6 +3760,9 @@ def main():
             theme_writer.discard()
         print("\nAborting preprocessing due to missing model metadata.")
         sys.exit(1) # Exit script if metadata was missing
+
+    if vocab_collector is not None:
+        vocab_collector.finalize()
 
     # Calculate overall stats
     num_models = len(summaries["model_summary"])
@@ -3772,6 +3826,13 @@ def main():
     generate_sitemap_and_robots(summaries["model_summary"], theme_keys_for_sitemap, lab_keys=lab_keys_for_sitemap, domain_slugs=domain_slugs)
     # Overwrite root About page with static content using real stats
     _write_file("index.html", render_home_page(stats_summary, summaries["question_theme_summary"], lab_standings, lab_metadata=lab_meta_dict, model_summary=summaries["model_summary"]))
+
+    if not args.no_vocab:
+        print("\nBuilding Lexical Fingerprints (experiments/vocab)…")
+        import lexical_build
+        import lexical_render
+        lexical_build.build(data_root=os.path.dirname(ANALYSIS_DIR))
+        lexical_render.render_all()
 
     print("\nPreprocessing and saving complete (Phase 1 split outputs).")
 

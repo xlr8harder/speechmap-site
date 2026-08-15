@@ -339,9 +339,17 @@ def lab_display_name(lab, lab_metadata):
     return lab_id
 
 
-def iter_preprocessed_us_hard_data(analysis_dir):
-    """Yield normalized analysis records without retaining the full corpus."""
-    file_paths = glob(os.path.join(analysis_dir, "compliance_us_hard_*.jsonl"))
+def iter_preprocessed_us_hard_data(analysis_dir, only_files=None):
+    """Yield normalized analysis records without retaining the full corpus.
+
+    only_files: optional explicit file list — callers that can prove some
+    files need no processing (e.g. lexical warm with fresh caches) pass the
+    remainder here instead of streaming the whole directory.
+    """
+    if only_files is not None:
+        file_paths = list(only_files)
+    else:
+        file_paths = glob(os.path.join(analysis_dir, "compliance_us_hard_*.jsonl"))
     print(f"\nFound {len(file_paths)} analysis files in {analysis_dir}")
     if not file_paths:
         print(f"Warning: No 'compliance_us_hard_*.jsonl' files found.")
@@ -353,6 +361,14 @@ def iter_preprocessed_us_hard_data(analysis_dir):
 
     for i, fpath in enumerate(file_paths):
         fname = os.path.basename(fpath)
+        # Format-drift guard: a COMPLETE verdict means the judge saw substantive
+        # text, so COMPLETE rows with no extractable response text indicate the
+        # response shape has drifted past this parser (as happened when the
+        # Anthropic Messages shape arrived). Fail loudly instead of shipping
+        # empty response sections.
+        complete_seen = 0
+        complete_empty = 0
+        empty_shape_sample = None
         # print(f"Processing file ({i+1}/{len(file_paths)}): {fname}") # Reduce noise
         try:
             with open(fpath, "r", encoding="utf-8") as f:
@@ -438,6 +454,31 @@ def iter_preprocessed_us_hard_data(analysis_dir):
                             if specific_api_error and specific_api_error != "Unknown API error structure":
                                 error_message += f" [API Msg: {specific_api_error}]"
 
+                        elif isinstance(response_obj, dict) and isinstance(
+                            (response_obj.get("_llm_client") or {}).get("standardized_response"), dict
+                        ):
+                            # llm_client standardized shape (e.g. Tinker-served
+                            # models): the eval pipeline's own normalization is
+                            # authoritative when present; content is a string
+                            # or a thinking/text block list
+                            standardized_content = response_obj["_llm_client"]["standardized_response"].get("content")
+                            if isinstance(standardized_content, str):
+                                response_content = standardized_content
+                            elif isinstance(standardized_content, list):
+                                response_content = "\n\n".join(
+                                    block.get("text", "")
+                                    for block in standardized_content
+                                    if isinstance(block, dict) and block.get("type") == "text"
+                                ).strip()
+                        elif isinstance(response_obj, dict) and isinstance(response_obj.get("content"), list):
+                            # Anthropic Messages shape: visible text lives in
+                            # 'text' blocks; thinking/redacted_thinking blocks
+                            # are not part of the displayed response
+                            response_content = "\n\n".join(
+                                block.get("text", "")
+                                for block in response_obj["content"]
+                                if isinstance(block, dict) and block.get("type") == "text"
+                            ).strip()
                         elif isinstance(response_obj, dict) and response_obj.get("choices"):
                             choice = response_obj["choices"][0]
                             if isinstance(choice.get("message"), dict):
@@ -484,9 +525,16 @@ def iter_preprocessed_us_hard_data(analysis_dir):
                             "grouping_key": grouping_key,
                             "api_model": api_model,
                             "api_provider": api_provider,
+                            "source_file": fname,
                         }
                         if error_class:
                             output_record["error_class"] = error_class
+                        if compliance == "COMPLETE":
+                            complete_seen += 1
+                            if not (response_content or "").strip():
+                                complete_empty += 1
+                                if empty_shape_sample is None and isinstance(response_obj, dict):
+                                    empty_shape_sample = sorted(response_obj.keys())[:8]
                         processed_count += 1
                         yield output_record
                     except KeyError as e:
@@ -498,6 +546,14 @@ def iter_preprocessed_us_hard_data(analysis_dir):
         except Exception as e:
             print(f"  ERR Reading File {fname}: {e}")
             error_count += 1
+        if complete_seen >= 10 and complete_empty > 0.10 * complete_seen:
+            raise RuntimeError(
+                f"Response-format drift in {fname}: {complete_empty} of "
+                f"{complete_seen} COMPLETE responses have no extractable text. "
+                f"The response shape likely changed (sample response keys: "
+                f"{empty_shape_sample}); update the extraction in "
+                "iter_preprocessed_us_hard_data before building."
+            )
 
     print(f"\nPreprocessing finished. Processed: {processed_count}, Skipped Format: {skipped_id_format}, Errors: {error_count}")
 
@@ -1633,6 +1689,7 @@ def render_home_page(stats, theme_summary=None, lab_standings=None, lab_metadata
             '<span class="post-desc">Lab leaderboard updates, new-model results, and commentary on the shifting boundaries of AI speech.</span></a>'
             "</div>"
         )
+
 
     body = (
         # Full-width hero with map background
@@ -2969,7 +3026,7 @@ def _render_response_cards(theme_safe, model, records):
                 "</a></div>"
             )
         out.append(
-            '<div class="response-card-nested">'
+            f'<div class="response-card-nested" id="v{_html_escape(str(var))}">'
             f'<div class="response-header nested-header"><strong>Variation {_html_escape(var)}</strong> · '
             f'<span class="compliance-label compliance-{_html_escape(comp)}">{_html_escape(comp)}</span></div>'
             '<div class="response-content-area nested-content">'

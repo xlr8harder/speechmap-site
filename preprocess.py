@@ -3698,7 +3698,7 @@ def main():
             generate_static_pages_from_artifacts(skip_theme_pages=args.no_themes)
             if not args.no_vocab and (REPO_ROOT / ".cache" / "lexical-artifacts").is_dir():
                 import lexical_render
-                lexical_render.render_all()
+                lexical_render.render_all(dist_root=BUILD_ROOT)
             print("Static regeneration complete.")
         except Exception as e:
             print(f"Static regeneration failed: {e}")
@@ -3832,7 +3832,7 @@ def main():
         import lexical_build
         import lexical_render
         lexical_build.build(data_root=os.path.dirname(ANALYSIS_DIR))
-        lexical_render.render_all()
+        lexical_render.render_all(dist_root=BUILD_ROOT)
 
     print("\nPreprocessing and saving complete (Phase 1 split outputs).")
 

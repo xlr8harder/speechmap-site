@@ -383,3 +383,5 @@
 {"model_identifier": "google/gemini-3.7-flash", "creator": "google", "model_name": "gemini-3.7-flash", "model_family": "gemini-3.7-flash", "release_date": "2026-08-13", "reasoning_model": true, "notes": "Reasoning is mandatory."}
 {"model_identifier": "qwen/qwen3.8-27b", "creator": "alibaba", "model_name": "qwen3.8-27b", "model_family": "qwen3.8", "release_date": "2026-08-14", "reasoning_model": false, "notes": ""}
 {"model_identifier": "qwen/qwen3.8-27b-reasoning", "creator": "alibaba", "model_name": "qwen3.8-27b", "model_family": "qwen3.8", "release_date": "2026-08-14", "reasoning_model": true, "notes": "Reasoning enabled at low effort via OpenRouter."}
+{"model_identifier": "openrouter/ox-alpha", "creator": "unknown", "model_name": "ox-alpha", "model_family": "ox-alpha", "release_date": "2026-08-20", "reasoning_model": true, "notes": "Reasoning is mandatory."}
+{"model_identifier": "z-ai/glm-5.3", "creator": "z-ai", "model_name": "glm-5.3", "model_family": "glm-5.3", "release_date": "2026-08-18", "reasoning_model": true, "notes": "Reasoning is mandatory."}

@@ -1,6 +1,9 @@
 # Build artifacts and caches
 __pycache__/
 .venv/
+.venv-*/
+venv/
+env/
 .screenshots/
 .pytest_cache/
 node_modules/

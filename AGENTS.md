@@ -30,6 +30,9 @@ capture only the top of the page.
 - Install deps: `uv sync` (includes the dev group: playwright, pytest).
   One-time browser setup for tests/screenshots: `uv run playwright install chromium`.
 - Generate site: `uv run python preprocess.py` (recreates ignored `/dist/`; slow — full data rebuild).
+- Validate the exact Pages upload tree with `npm run deploy:check`; deploy only with
+  `npm run deploy`. The guarded command always uploads resolved `/dist/` and rejects
+  virtual environments, caches, dependencies, and symlinks before invoking Wrangler.
 - Artifact-only rebuild: `uv run python preprocess.py --static-only` (reads from `/.cache/` artifacts).
   Add `--no-themes` while iterating to skip the ~500 theme detail pages (much faster);
   do a full `--static-only` pass before handing off, since head/foot changes touch every page.

@@ -6,6 +6,8 @@
     "wrangler": "^4.107.0"
   },
   "scripts": {
-    "dev": "wrangler pages dev dist --port 8789 --compatibility-date=2026-07-01"
+    "dev": "wrangler pages dev dist --port 8789 --compatibility-date=2026-07-01",
+    "deploy:check": "python3 tools/deploy_pages.py --check-only",
+    "deploy": "python3 tools/deploy_pages.py"
   }
 }

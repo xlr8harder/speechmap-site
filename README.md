@@ -7,6 +7,7 @@
 5. Generate the site: `uv run python preprocess.py`.
 6. Preview locally with `npm run dev` at http://localhost:8789/. For static-only iteration, `python3 -m http.server -d dist 8000` is faster, but Function routes will not work.
 7. Commit the code/data checkpoints used for the build. Production deployment is a separate action from Git push.
+8. Validate the exact upload tree with `npm run deploy:check`, then deploy it with `npm run deploy`.
 
 ## Build outputs
 - Deployable site (generated and ignored):
@@ -21,4 +22,10 @@
 ## Rebuild options
 - Full build from analysis + metadata: `uv run python preprocess.py`
 - Static-only rebuild from cache artifacts: `uv run python preprocess.py --static-only`
-- Deploy the generated tree: `npx wrangler pages deploy dist --project-name speechmap`
+- Validate the generated tree without uploading: `npm run deploy:check`
+- Deploy the generated tree: `npm run deploy`
+
+The deploy command always uploads this repository's resolved `dist/` directory
+to the `speechmap` Pages project on `main`. It rejects missing/incomplete build
+output, symlinks, and development directories such as `.venv`, `node_modules`,
+or `.cache`; it does not accept an alternate upload directory.

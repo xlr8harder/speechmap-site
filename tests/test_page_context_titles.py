@@ -71,6 +71,30 @@ def test_model_detail_contextualizes_search_landing():
     assert "This is a SpeechMap result page for <b>z-ai/glm-5.2</b>" in html
     assert "asked this model 4 sensitive and controversial prompts across 1 question theme" in html
     assert '<a href="/">project overview</a>' in html
+    assert "model-evaluation-note" not in html
+
+
+def test_model_detail_renders_optional_evaluation_note():
+    evaluation_note = (
+        "The SpeechMap eval is unable to complete against this model. "
+        "Across several attempts, after some initial successful queries, all "
+        "subsequent requests begin failing, presumably due to a moderation layer."
+    )
+    html = render_model_detail(
+        "meta/muse-spark-1.3",
+        {
+            "creator": "meta",
+            "model_name": "muse-spark-1.3",
+            "model_family": "muse-spark",
+            "release_date": "2026-09-02",
+            "reasoning_model": True,
+            "evaluation_note": evaluation_note,
+        },
+        {},
+    )
+
+    assert '<div class="context-note model-evaluation-note">' in html
+    assert f"<b>Evaluation note:</b> {evaluation_note}" in html
 
 
 def test_theme_detail_title_and_description_are_search_readable(tmp_path, monkeypatch):

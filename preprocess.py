@@ -1865,6 +1865,7 @@ def render_model_detail(model_id, meta, theme_stats_for_model, lab_metadata=None
     release_date = (meta or {}).get("release_date", "")
     model_family = (meta or {}).get("model_family", "")
     is_reasoning = (meta or {}).get("reasoning_model", False)
+    evaluation_note = (meta or {}).get("evaluation_note", "")
 
     # Hero header
     hero_html = f"""
@@ -1904,6 +1905,14 @@ def render_model_detail(model_id, meta, theme_stats_for_model, lab_metadata=None
   {WHY_WE_TEST_HTML}
 </div>
 """
+
+    evaluation_note_html = ""
+    if evaluation_note:
+        evaluation_note_html = (
+            '<div class="context-note model-evaluation-note">'
+            f"<b>Evaluation note:</b> {_html_escape(evaluation_note)}"
+            "</div>"
+        )
 
     # Model info card - include all key fields
     info_items = []
@@ -2057,7 +2066,7 @@ def render_model_detail(model_id, meta, theme_stats_for_model, lab_metadata=None
         f"{total_responses} sensitive prompts completely, refused {pct_denial:.1f}%. "
         f"Per-theme refusal breakdown on SpeechMap.AI."
     )
-    return _page_head(seo_title, canon, depth=depth, active_tab='models', description=seo_desc) + hero_html + intro_html + info_section + stats_html + table + _page_foot(depth=depth)
+    return _page_head(seo_title, canon, depth=depth, active_tab='models', description=seo_desc) + hero_html + intro_html + evaluation_note_html + info_section + stats_html + table + _page_foot(depth=depth)
 
 
 def render_themes_index(theme_summary_all, model_theme_summary=None):

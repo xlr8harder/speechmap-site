@@ -127,16 +127,15 @@
 {"model_identifier": "qwen/qwen-2.5-72b-instruct", "creator": "alibaba", "model_name": "qwen-2.5-72b-instruct", "model_family": "qwen-2.5", "release_date": "2024-09-19", "reasoning_model": false, "notes": ""}
 {"model_identifier": "qwen/qwen2.5-vl-72b-instruct", "creator": "alibaba", "model_name": "qwen-2.5-vl-72b-instruct", "model_family": "qwen-2.5", "release_date": "2024-09-19", "reasoning_model": false, "notes": ""}
 {"model_identifier": "qwen/qwen-2.5-7b-instruct", "creator": "alibaba", "model_name": "qwen-2.5-7b-instruct", "model_family": "qwen-2.5", "release_date": "2024-09-19", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/polaris-alpha", "creator": "unknown", "model_name": "polaris-alpha", "model_family": "unknown", "release_date": "2025-11-08", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/optimus-alpha", "creator": "unknown", "model_name": "optimus-alpha", "model_family": "unknown", "release_date": "2025-04-10", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/horizon-beta", "creator": "unknown", "model_name": "horizon-beta", "model_family": "unknown", "release_date": "2025-08-03", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/quasar-alpha", "creator": "unknown", "model_name": "quasar-alpha", "model_family": "unknown", "release_date": "2025-04-10", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/sonoma-sky-alpha", "creator": "unknown", "model_name": "sonoma-sky-alpha", "model_family": "unknown", "release_date": "2025-09-05", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/sonoma-dusk-alpha", "creator": "unknown", "model_name": "sonoma-dusk-alpha", "model_family": "unknown", "release_date": "2025-09-05", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/sonoma-dusk-alpha", "creator": "unknown", "model_name": "sonoma-dusk-alpha", "model_family": "unknown", "release_date": "2025-09-05", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/sherlock-dash-alpha", "creator": "unknown", "model_name": "sherlock-dash-alpha", "model_family": "unknown", "release_date": "2025-11-15", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/sherlock-think-alpha", "creator": "unknown", "model_name": "sherlock-think-alpha", "model_family": "unknown", "release_date": "2025-11-15", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/pony-alpha", "creator": "unknown", "model_name": "pony-alpha", "model_family": "unknown", "release_date": "2026-02-06", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/polaris-alpha", "creator": "unknown", "model_name": "polaris-alpha", "model_family": "unknown", "release_date": "2025-11-08", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/optimus-alpha", "creator": "unknown", "model_name": "optimus-alpha", "model_family": "unknown", "release_date": "2025-04-10", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/horizon-beta", "creator": "unknown", "model_name": "horizon-beta", "model_family": "unknown", "release_date": "2025-08-03", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/quasar-alpha", "creator": "unknown", "model_name": "quasar-alpha", "model_family": "unknown", "release_date": "2025-04-10", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/sonoma-sky-alpha", "creator": "unknown", "model_name": "sonoma-sky-alpha", "model_family": "unknown", "release_date": "2025-09-05", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/sonoma-dusk-alpha", "creator": "unknown", "model_name": "sonoma-dusk-alpha", "model_family": "unknown", "release_date": "2025-09-05", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/sherlock-dash-alpha", "creator": "unknown", "model_name": "sherlock-dash-alpha", "model_family": "unknown", "release_date": "2025-11-15", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/sherlock-think-alpha", "creator": "unknown", "model_name": "sherlock-think-alpha", "model_family": "unknown", "release_date": "2025-11-15", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/pony-alpha", "creator": "unknown", "model_name": "pony-alpha", "model_family": "unknown", "release_date": "2026-02-06", "reasoning_model": false, "notes": ""}
 {"model_identifier": "openai/chatgpt-4o-latest", "creator": "openai", "model_name": "chatgpt-4o-latest", "model_family": "gpt-4o", "release_date": "2025-03-26", "reasoning_model": false, "notes": ""}
 {"model_identifier": "openai/chatgpt-4o-latest-20250428", "creator": "openai", "model_name": "chatgpt-4o-latest-20250428", "model_family": "gpt-4o", "release_date": "2025-04-28", "reasoning_model": false, "notes": ""}
 {"model_identifier": "meta-llama/llama-4-scout", "creator": "meta-llama", "model_name": "llama-4-scout", "model_family": "llama-4", "release_date": "2025-04-05", "reasoning_model": false, "notes": ""}
@@ -267,7 +266,7 @@
 {"model_identifier": "bytedance/seed-1.6", "creator": "bytedance", "model_name": "seed-1.6", "model_family": "seed-1.6", "release_date": "2025-12-23", "reasoning_model": true, "notes": ""}
 {"model_identifier": "bytedance/seed-1.6-flash", "creator": "bytedance", "model_name": "seed-1.6-flash", "model_family": "seed-1.6-flash", "release_date": "2025-12-23", "reasoning_model": true, "notes": ""}
 {"model_identifier": "stepfun/step-3.5-flash", "creator": "stepfun", "model_name": "step-3.5-flash", "model_family": "step-3.5-flash", "release_date": "2026-02-03", "reasoning_model": true, "notes": ""}
-{"model_identifier": "openrouter/aurora-alpha", "creator": "unknown", "model_name": "aurora-alpha", "model_family": "unknown", "release_date": "2026-02-09", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/aurora-alpha", "creator": "unknown", "model_name": "aurora-alpha", "model_family": "unknown", "release_date": "2026-02-09", "reasoning_model": false, "notes": ""}
 {"model_identifier": "qwen/qwen3-max-thinking", "creator": "alibaba", "model_name": "qwen3-max-thinking", "model_family": "qwen3-max", "release_date": "2026-01-25", "reasoning_model": true, "notes": ""}
 {"model_identifier": "z-ai/glm-5", "creator": "z-ai", "model_name": "glm-5", "model_family": "glm-5", "release_date": "2026-02-11", "reasoning_model": false, "notes": ""}
 {"model_identifier": "z-ai/glm-5-thinking", "creator": "z-ai", "model_name": "glm-5-thinking", "model_family": "glm-5", "release_date": "2026-02-11", "reasoning_model": true, "notes": ""}
@@ -290,10 +289,10 @@
 {"model_identifier": "inception/mercury-2", "creator": "inception", "model_name": "mercury-2", "model_family": "mercury-2", "release_date": "2026-02-24", "reasoning_model": false, "notes": ""}
 {"model_identifier": "openai/gpt-5.4", "creator": "openai", "model_name": "gpt-5.4", "model_family": "gpt-5.4", "release_date": "2026-03-05", "reasoning_model": false, "notes": ""}
 {"model_identifier": "openai/gpt-5.4-reasoning", "creator": "openai", "model_name": "gpt-5.4-reasoning", "model_family": "gpt-5.4", "release_date": "2026-03-05", "reasoning_model": true, "notes": ""}
-{"model_identifier": "openrouter/hunter-alpha", "creator": "unknown", "model_name": "hunter-alpha", "model_family": "hunter-alpha", "release_date": "2026-03-12", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/hunter-alpha-reasoning", "creator": "unknown", "model_name": "hunter-alpha", "model_family": "hunter-alpha", "release_date": "2026-03-12", "reasoning_model": true, "notes": ""}
-{"model_identifier": "openrouter/healer-alpha", "creator": "unknown", "model_name": "healer-alpha", "model_family": "healer-alpha", "release_date": "2026-03-12", "reasoning_model": false, "notes": ""}
-{"model_identifier": "openrouter/healer-alpha-reasoning", "creator": "unknown", "model_name": "healer-alpha", "model_family": "healer-alpha", "release_date": "2026-03-12", "reasoning_model": true, "notes": ""}
+{"model_identifier": "stealth/hunter-alpha", "creator": "unknown", "model_name": "hunter-alpha", "model_family": "hunter-alpha", "release_date": "2026-03-12", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/hunter-alpha-reasoning", "creator": "unknown", "model_name": "hunter-alpha", "model_family": "hunter-alpha", "release_date": "2026-03-12", "reasoning_model": true, "notes": ""}
+{"model_identifier": "stealth/healer-alpha", "creator": "unknown", "model_name": "healer-alpha", "model_family": "healer-alpha", "release_date": "2026-03-12", "reasoning_model": false, "notes": ""}
+{"model_identifier": "stealth/healer-alpha-reasoning", "creator": "unknown", "model_name": "healer-alpha", "model_family": "healer-alpha", "release_date": "2026-03-12", "reasoning_model": true, "notes": ""}
 {"model_identifier": "nvidia/nemotron-3-super-120b-a12b", "creator": "nvidia", "model_name": "nemotron-3-super-120b-a12b", "model_family": "nemotron-3-super", "release_date": "2026-03-11", "reasoning_model": false, "notes": ""}
 {"model_identifier": "nvidia/nemotron-3-super-120b-a12b-reasoning", "creator": "nvidia", "model_name": "nemotron-3-super-120b-a12b", "model_family": "nemotron-3-super", "release_date": "2026-03-11", "reasoning_model": true, "notes": ""}
 {"model_identifier": "mistralai/mistral-small-2603", "creator": "mistralai", "model_name": "mistral-small-2603", "model_family": "mistral-small", "release_date": "2026-03-16", "reasoning_model": false, "notes": ""}
@@ -311,7 +310,7 @@
 {"model_identifier": "openai/gpt-5.4-nano", "creator": "openai", "model_name": "gpt-5.4-nano", "model_family": "gpt-5.4", "release_date": "2026-03-17", "reasoning_model": false, "notes": ""}
 {"model_identifier": "openai/gpt-5.4-nano-reasoning", "creator": "openai", "model_name": "gpt-5.4-nano", "model_family": "gpt-5.4", "release_date": "2026-03-17", "reasoning_model": true, "notes": ""}
 {"model_identifier": "minimax/minimax-m2.7", "creator": "minimax", "model_name": "minimax-m2.7", "model_family": "minimax-m2", "release_date": "2026-03-18", "reasoning_model": true, "notes": "reasoning-only endpoint"}
-{"model_identifier": "openrouter/elephant-alpha", "creator": "unknown", "model_name": "elephant-alpha", "model_family": "elephant-alpha", "release_date": "2026-04-13", "reasoning_model": false, "notes": "No reasoning traces observed in OpenRouter probe."}
+{"model_identifier": "stealth/elephant-alpha", "creator": "unknown", "model_name": "elephant-alpha", "model_family": "elephant-alpha", "release_date": "2026-04-13", "reasoning_model": false, "notes": "No reasoning traces observed in OpenRouter probe."}
 {"model_identifier": "tencent/hy3-preview", "creator": "tencent", "model_name": "hy3-preview", "model_family": "hy3-preview", "release_date": "2026-04-24", "reasoning_model": false, "notes": ""}
 {"model_identifier": "tencent/hy3-preview-reasoning", "creator": "tencent", "model_name": "hy3-preview", "model_family": "hy3-preview", "release_date": "2026-04-24", "reasoning_model": true, "notes": ""}
 {"model_identifier": "inclusionai/ling-2.6-1t", "creator": "inclusionai", "model_name": "ling-2.6-1t", "model_family": "ling-2.6", "release_date": "2026-04-24", "reasoning_model": false, "notes": ""}
@@ -320,7 +319,7 @@
 {"model_identifier": "x-ai/grok-4.3", "creator": "x-ai", "model_name": "grok-4.3", "model_family": "grok-4.3", "release_date": "2026-05-01", "reasoning_model": false, "notes": ""}
 {"model_identifier": "x-ai/grok-4.3-reasoning", "creator": "x-ai", "model_name": "grok-4.3", "model_family": "grok-4.3", "release_date": "2026-05-01", "reasoning_model": true, "notes": ""}
 {"model_identifier": "ibm/granite-4.1-8b", "creator": "ibm", "model_name": "granite-4.1-8b", "model_family": "granite-4.1", "release_date": "2026-04-29", "reasoning_model": false, "notes": "No reasoning traces observed in OpenRouter probe."}
-{"model_identifier": "openrouter/owl-alpha", "creator": "unknown", "model_name": "owl-alpha", "model_family": "owl-alpha", "release_date": "2026-04-28", "reasoning_model": false, "notes": "No reasoning traces observed in OpenRouter probe."}
+{"model_identifier": "stealth/owl-alpha", "creator": "unknown", "model_name": "owl-alpha", "model_family": "owl-alpha", "release_date": "2026-04-28", "reasoning_model": false, "notes": "No reasoning traces observed in OpenRouter probe."}
 {"model_identifier": "google/gemini-3.5-flash", "creator": "google", "model_name": "gemini-3.5-flash", "model_family": "gemini-3.5-flash", "release_date": "2026-05-19", "reasoning_model": true, "notes": "Reasoning traces observed in most successful responses."}
 {"model_identifier": "google/gemini-3.5-flash-lite", "creator": "google", "model_name": "gemini-3.5-flash-lite", "model_family": "gemini-3.5-flash-lite", "release_date": "2026-07-21", "reasoning_model": true, "notes": "Reasoning is mandatory."}
 {"model_identifier": "google/gemini-3.6-flash", "creator": "google", "model_name": "gemini-3.6-flash", "model_family": "gemini-3.6-flash", "release_date": "2026-07-21", "reasoning_model": true, "notes": "Reasoning is mandatory."}
@@ -383,7 +382,16 @@
 {"model_identifier": "google/gemini-3.7-flash", "creator": "google", "model_name": "gemini-3.7-flash", "model_family": "gemini-3.7-flash", "release_date": "2026-08-13", "reasoning_model": true, "notes": "Reasoning is mandatory."}
 {"model_identifier": "qwen/qwen3.8-27b", "creator": "alibaba", "model_name": "qwen3.8-27b", "model_family": "qwen3.8", "release_date": "2026-08-14", "reasoning_model": false, "notes": ""}
 {"model_identifier": "qwen/qwen3.8-27b-reasoning", "creator": "alibaba", "model_name": "qwen3.8-27b", "model_family": "qwen3.8", "release_date": "2026-08-14", "reasoning_model": true, "notes": "Reasoning enabled at low effort via OpenRouter."}
-{"model_identifier": "openrouter/ox-alpha", "creator": "unknown", "model_name": "ox-alpha", "model_family": "ox-alpha", "release_date": "2026-08-20", "reasoning_model": true, "notes": "Reasoning is mandatory."}
+{"model_identifier": "stealth/ox-alpha", "creator": "unknown", "model_name": "ox-alpha", "model_family": "ox-alpha", "release_date": "2026-08-20", "reasoning_model": true, "notes": "Reasoning is mandatory."}
+{"model_identifier": "stealth/union-alpha", "creator": "unknown", "model_name": "union-alpha", "model_family": "union-alpha", "release_date": "2026-09-16", "reasoning_model": false, "notes": "No reasoning traces observed in OpenRouter probe."}
+{"model_identifier": "openai/gpt-6-astra", "creator": "openai", "model_name": "gpt-6-astra", "model_family": "gpt-6", "release_date": "2026-09-04", "reasoning_model": true, "notes": "Reasoning is mandatory."}
+{"model_identifier": "qwen/qwen3.8-max-0902", "creator": "alibaba", "model_name": "qwen3.8-max-0902", "model_family": "qwen3.8", "release_date": "2026-09-03", "reasoning_model": true, "notes": "Reasoning is mandatory."}
+{"model_identifier": "ibm-granite/granite-4.2-8b", "creator": "ibm", "model_name": "granite-4.2-8b", "model_family": "granite-4.2", "release_date": "2026-08-31", "reasoning_model": false, "notes": ""}
+{"model_identifier": "ibm-granite/granite-4.2-8b-reasoning", "creator": "ibm", "model_name": "granite-4.2-8b", "model_family": "granite-4.2", "release_date": "2026-08-31", "reasoning_model": true, "notes": "Reasoning enabled via OpenRouter."}
+{"model_identifier": "bytedance-seed/seed-2-1-turbo", "creator": "bytedance", "model_name": "seed-2-1-turbo", "model_family": "seed-2.1", "release_date": "2026-08-12", "reasoning_model": false, "notes": ""}
+{"model_identifier": "bytedance-seed/seed-2-1-turbo-reasoning", "creator": "bytedance", "model_name": "seed-2-1-turbo", "model_family": "seed-2.1", "release_date": "2026-08-12", "reasoning_model": true, "notes": "Reasoning enabled via OpenRouter."}
+{"model_identifier": "inception/mercury-2.5", "creator": "inception", "model_name": "mercury-2.5", "model_family": "mercury-2.5", "release_date": "2026-09-08", "reasoning_model": false, "notes": ""}
+{"model_identifier": "inception/mercury-2.5-reasoning", "creator": "inception", "model_name": "mercury-2.5", "model_family": "mercury-2.5", "release_date": "2026-09-08", "reasoning_model": true, "notes": "Reasoning enabled via OpenRouter."}
 {"model_identifier": "z-ai/glm-5.3", "creator": "z-ai", "model_name": "glm-5.3", "model_family": "glm-5.3", "release_date": "2026-08-18", "reasoning_model": true, "notes": "Reasoning is mandatory."}
 {"model_identifier": "deepseek/deepseek-v4-flash-vision-exp", "creator": "deepseek", "model_name": "deepseek-v4-flash-vision-exp", "model_family": "deepseek-v4-flash", "release_date": "2026-08-21", "reasoning_model": false, "notes": "Experimental vision-capable model via OpenRouter."}
 {"model_identifier": "deepseek/deepseek-v4-flash-vision-exp-reasoning", "creator": "deepseek", "model_name": "deepseek-v4-flash-vision-exp", "model_family": "deepseek-v4-flash", "release_date": "2026-08-21", "reasoning_model": true, "notes": "Experimental vision-capable model with reasoning enabled via OpenRouter."}

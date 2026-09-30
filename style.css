@@ -880,8 +880,11 @@ button.table-sort-dir { padding: 6px 11px; border: 1px solid #cbd5e1; border-rad
 /* --- Question Theme Detail View --- */
 .response-list { margin-top: 20px; }
 .model-section { margin-bottom: 35px; border-top: 2px solid #e9ecef; padding-top: 20px; scroll-margin-top: 20px; }
-.response-card-nested { border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 15px; background-color: #fff; overflow: hidden; }
+.response-card-nested { border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 15px; background-color: #fff; overflow: hidden; scroll-margin-top: 20px; }
+.response-card-nested:target { border-color: var(--link); box-shadow: 0 0 0 2px rgba(45, 90, 135, 0.18); }
 .response-header.nested-header { background-color: #f1f3f5; padding: 8px 12px; font-size: 1.1em; border-bottom: 1px solid #e0e0e0; font-weight: bold;}
+.response-link-actions { float: right; display: inline-flex; gap: 10px; align-items: center; font-size: 0.78em; font-weight: normal; }
+.copy-response-link { border: 0; background: none; padding: 0; color: var(--link); font: inherit; text-decoration: underline; cursor: pointer; }
 .response-content-area.nested-content { padding: 12px; }
 
 /* Shared Detail Section Styling */

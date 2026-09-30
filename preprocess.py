@@ -69,7 +69,7 @@ SUBSTACK_CACHE_FILE = os.path.join(CACHE_DIR, "substack-posts.json")
 
 # Phase 2 static site generation
 SITE_BASE_URL = "https://speechmap.ai"
-SITE_ASSET_VERSION = 52
+SITE_ASSET_VERSION = 53
 DEFAULT_PAGE_DESCRIPTION = (
     "SpeechMap.AI measures AI censorship and refusal rates: how ChatGPT, Claude, "
     "Gemini, Grok, and 300+ language models handle controversial speech, with a "
@@ -1315,7 +1315,7 @@ def _page_head(title, canonical_url, depth=0, active_tab=None, description=None)
 
 def _page_foot(depth=0):
     return (
-        f"\n<script src=\"/script.js?27\"></script>\n"
+        f"\n<script src=\"/script.js?28\"></script>\n"
         + "<script>try{ window.speechmapHydrate && window.speechmapHydrate(); }catch(e){}</script>\n"
         + "</div></body></html>"
     )
@@ -3025,6 +3025,8 @@ def _render_response_cards(theme_safe, model, records):
         ans = md_to_html(response_text)
         jtxt = _html_escape(r.get("judge_analysis") or "")
         var = r.get("variation") or ""
+        card_id = f"v{_html_escape(str(var))}"
+        card_url = f"/themes/{theme_safe}/m/{safe}/#{card_id}"
         moderation_reason = r.get("original_moderation_reason")
         moderation_note_html = ""
         if moderation_reason:
@@ -3059,9 +3061,13 @@ def _render_response_cards(theme_safe, model, records):
                 "</a></div>"
             )
         out.append(
-            f'<div class="response-card-nested" id="v{_html_escape(str(var))}">'
+            f'<div class="response-card-nested" id="{card_id}">'
             f'<div class="response-header nested-header"><strong>Variation {_html_escape(var)}</strong> · '
-            f'<span class="compliance-label compliance-{_html_escape(comp)}">{_html_escape(comp)}</span></div>'
+            f'<span class="compliance-label compliance-{_html_escape(comp)}">{_html_escape(comp)}</span>'
+            '<span class="response-link-actions">'
+            f'<a class="response-permalink" href="{card_url}" aria-label="Link to variation {_html_escape(var)}">Link</a>'
+            '<button class="copy-response-link" type="button" aria-label="Copy link to this variation">Copy link</button>'
+            '</span></div>'
             '<div class="response-content-area nested-content">'
             f"{moderation_note_html}"
             f'<div class="detail-section"><strong>Prompt:</strong><pre class="text-display prompt-inline">{_html_escape(q)}</pre></div>'

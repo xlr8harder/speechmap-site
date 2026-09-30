@@ -6,6 +6,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from preprocess import (  # noqa: E402
+    _render_response_cards,
     render_home_page,
     render_model_detail,
     render_models_index,
@@ -133,3 +134,17 @@ def test_pair_template_context_and_edge_placeholders_stay_in_sync():
     assert "This page shows <b>__MODEL__</b> on one SpeechMap theme" in html
     assert "/models/__MODEL_SAFE__/" in html
     assert '.replaceAll("__MODEL_SAFE__", esc(model))' in edge_function
+
+
+def test_response_cards_have_copyable_pair_page_permalinks():
+    html = _render_response_cards(
+        "gender_patriarchy_defense",
+        "anthropic/claude-opus-5.5",
+        [{"variation": "3", "compliance": "COMPLETE"}],
+    )
+    assert 'id="v3"' in html
+    assert (
+        'href="/themes/gender_patriarchy_defense/m/anthropic-claude-opus-5-5/#v3"'
+        in html
+    )
+    assert 'class="copy-response-link"' in html

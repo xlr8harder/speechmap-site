@@ -49,6 +49,24 @@ async function fetchJSON(path){ const r = await fetch(path,{cache:'no-store'}); 
     window.addEventListener('hashchange', () => { setTimeout(reanchorIfNeeded, 0); });
   }
 
+  function setupResponseLinks(){
+    if (setupResponseLinks._done) return;
+    setupResponseLinks._done = true;
+    document.addEventListener('click', async (event) => {
+      const button = event.target.closest('.copy-response-link');
+      if (!button) return;
+      const link = button.parentElement.querySelector('.response-permalink');
+      if (!link) return;
+      try {
+        await navigator.clipboard.writeText(link.href);
+        button.textContent = 'Copied!';
+        setTimeout(() => { button.textContent = 'Copy link'; }, 2000);
+      } catch (_) {
+        window.prompt('Copy link:', link.href);
+      }
+    });
+  }
+
   // Matches a filter query against row text. A leading slash switches to
   // regex mode immediately — the closing slash is optional, so `/poolside`
   // works while it's still being typed. Anything else: all whitespace-
@@ -486,6 +504,7 @@ async function fetchJSON(path){ const r = await fetch(path,{cache:'no-store'}); 
   window.speechmapHydrate = function(){
     // Set up anchor fix on all pages; it runs only when a model hash exists
     setupAnchorFix();
+    setupResponseLinks();
     if (initPairRedirect()) return;
     if (!window.__pairRedirectWired) {
       window.__pairRedirectWired = 1;

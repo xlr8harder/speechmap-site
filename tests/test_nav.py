@@ -47,6 +47,26 @@ def test_legacy_model_anchor_redirects_to_pair_page(page, site_url, a_theme_slug
     page.wait_for_url(f"**/themes/{a_theme_slug}/m/{slug}/", timeout=5000)
 
 
+def test_response_copy_link_uses_pair_page_anchor(page, site_url):
+    page.goto(site_url + "/")
+    page.evaluate("""() => {
+      window.copiedLink = null;
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {writeText: async (value) => { window.copiedLink = value; }}
+      });
+      document.body.insertAdjacentHTML('beforeend',
+        '<div class="response-card-nested" id="v3">' +
+        '<span class="response-link-actions">' +
+        '<a class="response-permalink" href="/themes/test/m/model/#v3">Link</a>' +
+        '<button class="copy-response-link" type="button">Copy link</button>' +
+        '</span></div>');
+    }""")
+    page.locator(".copy-response-link").click()
+    assert page.evaluate("window.copiedLink") == site_url + "/themes/test/m/model/#v3"
+    assert page.locator(".copy-response-link").inner_text() == "Copied!"
+
+
 def test_domain_page_drilldown(page, site_url):
     """Themes overview rows link to domain pages carrying both tables."""
     page.goto(site_url + "/themes/")

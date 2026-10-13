@@ -69,7 +69,7 @@ SUBSTACK_CACHE_FILE = os.path.join(CACHE_DIR, "substack-posts.json")
 
 # Phase 2 static site generation
 SITE_BASE_URL = "https://speechmap.ai"
-SITE_ASSET_VERSION = 53
+SITE_ASSET_VERSION = 54
 DEFAULT_PAGE_DESCRIPTION = (
     "SpeechMap.AI measures AI censorship and refusal rates: how ChatGPT, Claude, "
     "Gemini, Grok, and 300+ language models handle controversial speech, with a "
@@ -268,12 +268,6 @@ def original_moderation_reason(response_obj):
         return stop_reason
 
     top_error = response_obj.get("error")
-    if (
-        isinstance(top_error, dict)
-        and isinstance(top_error.get("metadata"), dict)
-        and top_error["metadata"].get("provider_error_code") == "user_blocked"
-    ):
-        return None
     if isinstance(top_error, dict) and top_error.get("type") == "content_filter":
         return "content_filter"
     if any(MODERATION_ERROR_TEXT_RE.search(text) for text in collect_strings(top_error)):
@@ -569,23 +563,6 @@ def preprocess_us_hard_data(analysis_dir):
     return list(iter_preprocessed_us_hard_data(analysis_dir))
 
 
-def blocked_run_denominator(meta, observed_count):
-    """Return a censored run's full question-set denominator, if declared."""
-    config = (meta or {}).get("blocked_run")
-    if config is None:
-        return None
-    if not isinstance(config, dict) or set(config) != {
-        "question_set", "total_questions", "score_unattempted_as_noncomplete"
-    }:
-        raise ValueError("blocked_run metadata has an unexpected shape")
-    if config["question_set"] != "us_hard" or config["score_unattempted_as_noncomplete"] is not True:
-        raise ValueError("blocked_run requires us_hard and explicit non-complete scoring")
-    total = config["total_questions"]
-    if type(total) is not int or total <= 0 or observed_count > total:
-        raise ValueError("blocked_run total_questions is invalid for observed rows")
-    return total
-
-
 class StreamingThemeDetailWriter:
     """Write theme artifacts incrementally, publishing only after validation."""
 
@@ -680,7 +657,6 @@ def calculate_summaries(all_records, model_metadata_dict, skipped_models=None):
     # Use dict to store missing model info { model_id: {provider: ..., api_model: ...} }
     missing_models_info = {}
     skipped_model_ids = set(skipped_models or [])
-    blocked_run_ids = defaultdict(set)
 
     for r in all_records:
         model = r["model"]
@@ -698,12 +674,6 @@ def calculate_summaries(all_records, model_metadata_dict, skipped_models=None):
                 api_model_name = r.get("api_model", "Unknown")
                 missing_models_info[model] = {"provider": provider, "api_model": api_model_name}
             continue # Skip processing this record if metadata is missing
-
-        if (model_metadata_dict[model] or {}).get("blocked_run") is not None:
-            question_id = r["original_question_id"]
-            if question_id in blocked_run_ids[model]:
-                raise ValueError(f"duplicate blocked-run question ID for {model}: {question_id}")
-            blocked_run_ids[model].add(question_id)
 
         # Overall Model Stats
         model_stats[model]["c"] += 1
@@ -747,33 +717,17 @@ def calculate_summaries(all_records, model_metadata_dict, skipped_models=None):
     model_summary = []
     for model, stats in model_stats.items():
         count = stats["c"]
-        meta = model_metadata_dict[model]
-        release_date = meta.get("release_date")
-        score_denominator = blocked_run_denominator(meta, count) or count
-        unattempted = score_denominator - count
-        if unattempted:
-            question_path = DATA_ROOT / "questions" / "us_hard.jsonl"
-            with question_path.open(encoding="utf-8") as question_file:
-                question_ids = [json.loads(line)["id"] for line in question_file if line.strip()]
-            question_id_set = set(question_ids)
-            if len(question_ids) != score_denominator or len(question_id_set) != score_denominator:
-                raise ValueError(f"blocked-run question set does not match {model} denominator")
-            if not blocked_run_ids[model] <= question_id_set:
-                raise ValueError(f"blocked-run analysis contains IDs outside the question set: {model}")
-            if len(question_id_set - blocked_run_ids[model]) != unattempted:
-                raise ValueError(f"blocked-run missing-question count does not match {model}")
+        # Access metadata safely now, knowing the model exists in the dict
+        release_date = model_metadata_dict.get(model, {}).get("release_date", None)
         model_summary.append(
             {
                 "model": model,
                 "num_responses": count,
-                "score_denominator": score_denominator,
-                "unattempted_questions": unattempted,
                 "release_date": release_date,
-                "pct_complete_overall": (stats["k"] / score_denominator * 100) if score_denominator else 0,
-                "pct_evasive": (stats["e"] / score_denominator * 100) if score_denominator else 0,
-                "pct_denial": (stats["d"] / score_denominator * 100) if score_denominator else 0,
-                "pct_error": (stats["r"] / score_denominator * 100) if score_denominator else 0,
-                "pct_not_attempted": (unattempted / score_denominator * 100) if score_denominator else 0,
+                "pct_complete_overall": (stats["k"] / count * 100) if count > 0 else 0,
+                "pct_evasive": (stats["e"] / count * 100) if count > 0 else 0,
+                "pct_denial": (stats["d"] / count * 100) if count > 0 else 0,
+                "pct_error": (stats["r"] / count * 100) if count > 0 else 0,
             }
         )
     def _model_sort_key(m):
@@ -1157,8 +1111,7 @@ def _verdict_bar_html(pcts):
     """
     segs = []
     tips = []
-    segments = VERDICT_SEGMENTS + (("not_attempted", "Not attempted"),) if pcts.get("not_attempted") else VERDICT_SEGMENTS
-    for key, label in segments:
+    for key, label in VERDICT_SEGMENTS:
         try:
             v = max(0.0, float(pcts.get(key) or 0.0))
         except (TypeError, ValueError):
@@ -1682,7 +1635,6 @@ def render_home_page(stats, theme_summary=None, lab_standings=None, lab_metadata
                 "evasive": m.get("pct_evasive", 0),
                 "denial": m.get("pct_denial", 0),
                 "error": m.get("pct_error", 0),
-                "not_attempted": m.get("pct_not_attempted", 0),
             }
             rows.append(
                 f'<div class="recent-model">'
@@ -1697,9 +1649,8 @@ def render_home_page(stats, theme_summary=None, lab_standings=None, lab_metadata
             '<span class="vl-item"><i class="dot dot-complete"></i><b>Complete</b> — fully answered</span>'
             '<span class="vl-item"><i class="dot dot-evasive"></i><b>Evasive</b> — hedged or redirected</span>'
             '<span class="vl-item"><i class="dot dot-denial"></i><b>Denial</b> — refused</span>'
-            '<span class="vl-item"><i class="dot dot-error"></i><b>Error</b> — no usable response or provider failure</span>'
-            + ('<span class="vl-item"><i class="dot dot-not_attempted"></i><b>Not attempted</b> — no request sent</span>' if any(m.get("pct_not_attempted") for m in recent) else '')
-            + "</div>"
+            '<span class="vl-item"><i class="dot dot-error"></i><b>Error</b> — blocked by the provider</span>'
+            "</div>"
         )
         recent_html = (
             '<div class="home-section">'
@@ -1836,7 +1787,6 @@ def _model_table_html(model_summary, filter_placeholder="Filter models… (suppo
             "evasive": m.get("pct_evasive", 0),
             "denial": m.get("pct_denial", 0),
             "error": m.get("pct_error", 0),
-            "not_attempted": m.get("pct_not_attempted", 0),
         }
         data_attrs = " ".join(
             f'data-s-{k}="{_pct_value(v)}"' for k, v in pcts.items()
@@ -1845,15 +1795,7 @@ def _model_table_html(model_summary, filter_placeholder="Filter models… (suppo
         # footnote instead of dedicating a column to a non-event.
         n_resp = int(m.get("num_responses") or 0)
         note = ""
-        unattempted = int(m.get("unattempted_questions") or 0)
-        if unattempted:
-            score_denominator = int(m["score_denominator"])
-            note = (
-                f'<span class="resp-note" data-tip="Blocked run: {n_resp:,} observed '
-                f'response rows; {unattempted:,} questions not attempted. The score '
-                f'counts all {score_denominator:,} questions; unattempted does not mean refused">†</span>'
-            )
-        elif expected and n_resp < expected:
+        if expected and n_resp < expected:
             note = (
                 f'<span class="resp-note" data-tip="Incomplete data: only {n_resp:,} of '
                 f'{expected:,} responses were collected for this model here">†</span>'
@@ -1894,14 +1836,8 @@ def render_models_index(model_summary):
     prompt_plural = "" if prompt_count == 1 else "s"
     description = (
         f"Compare refusal rates and free-speech scores for {model_count:,} AI "
-        f"model release{release_plural} evaluated against the same {prompt_count:,} sensitive prompt{prompt_plural}."
+        f"model release{release_plural} tested on the same {prompt_count:,} sensitive prompt{prompt_plural}."
     )
-    blocked_note = ""
-    if any(int(m.get("unattempted_questions") or 0) for m in model_summary):
-        blocked_note = (
-            "<p>† A blocked-run score counts unattempted questions as non-complete; "
-            "the model page distinguishes them from observed denials and provider errors.</p>"
-        )
     table = f"""
 <div class=\"leaderboard-hero\">
   <h1>Model Results</h1>
@@ -1910,9 +1846,8 @@ def render_models_index(model_summary):
 <div class=\"leaderboard-content\">
   <div class=\"leaderboard-intro\">
     <div class=\"intro-main\">
-      <p>Models below are evaluated against the same {prompt_count:,} sensitive and controversial prompts. <b>% Complete</b> is the share answered in full under each model's stated scoring denominator \u2014 the bar shows the full outcome mix. Click a model for its per-theme breakdown, or use the filter to compare labs and model families.</p>
-      <p class=\"column-legend\"><b>Complete:</b> fully answered · <b>Evasive:</b> hedged or redirected · <b>Denial:</b> refused · <b>Error:</b> no usable response or provider failure · <b>Not attempted:</b> no request sent</p>
-      {blocked_note}
+      <p>Every model below faced the same {prompt_count:,} sensitive and controversial prompts. <b>% Complete</b> is the share it answered in full \u2014 the bar shows the full outcome mix. Click a model for its per-theme breakdown, or use the filter to compare labs and model families.</p>
+      <p class=\"column-legend\"><b>Complete:</b> fully answered · <b>Evasive:</b> hedged or redirected · <b>Denial:</b> refused · <b>Error:</b> blocked by the provider</p>
     </div>
   </div>
 """ + table_html + "\n</div>\n"
@@ -1956,28 +1891,17 @@ def render_model_detail(model_id, meta, theme_stats_for_model, lab_metadata=None
         total_denial += int(s.get("d", 0))
         total_error += int(s.get("r", 0))
 
-    score_denominator = blocked_run_denominator(meta, total_responses) or total_responses
-    unattempted = score_denominator - total_responses
-    pct_complete = (total_complete / score_denominator * 100) if score_denominator else 0
-    pct_evasive = (total_evasive / score_denominator * 100) if score_denominator else 0
-    pct_denial = (total_denial / score_denominator * 100) if score_denominator else 0
-    pct_error = (total_error / score_denominator * 100) if score_denominator else 0
-    pct_not_attempted = (unattempted / score_denominator * 100) if score_denominator else 0
+    pct_complete = (total_complete / total_responses * 100) if total_responses > 0 else 0
+    pct_evasive = (total_evasive / total_responses * 100) if total_responses > 0 else 0
+    pct_denial = (total_denial / total_responses * 100) if total_responses > 0 else 0
+    pct_error = (total_error / total_responses * 100) if total_responses > 0 else 0
     num_themes = len(theme_stats_for_model or {})
     prompt_plural = "" if total_responses == 1 else "s"
     theme_plural = "" if num_themes == 1 else "s"
 
-    blocked_run_intro = ""
-    if unattempted:
-        blocked_run_intro = (
-            f" The blocked-run completion rate uses all {score_denominator:,} questions: "
-            f"{unattempted:,} were not attempted after access was restricted. "
-            "Those questions are non-complete for this score, not observed refusals. "
-            "The theme breakdown below covers recorded attempts only."
-        )
     intro_html = f"""
 <div class="page-intro">
-  <p class="lab-lede">This is a SpeechMap result page for <b>{_html_escape(model_id)}</b>. We asked this model {total_responses:,} sensitive and controversial prompt{prompt_plural} across {num_themes:,} question theme{theme_plural}, then judged whether each response was complete, evasive, a denial, or a provider error.{blocked_run_intro} For methodology and broader context, start with the <a href="/">project overview</a>.</p>
+  <p class="lab-lede">This is a SpeechMap result page for <b>{_html_escape(model_id)}</b>. We asked this model {total_responses:,} sensitive and controversial prompt{prompt_plural} across {num_themes:,} question theme{theme_plural}, then judged whether each response was complete, evasive, a denial, or a provider error. For methodology and broader context, start with the <a href="/">project overview</a>.</p>
   {WHY_WE_TEST_HTML}
 </div>
 """
@@ -2004,26 +1928,18 @@ def render_model_detail(model_id, meta, theme_stats_for_model, lab_metadata=None
     info_section = f'<div class="model-info-section"><h3>Model Information</h3><div class="model-info-bar">{"".join(info_items)}</div></div>'
 
     # Overall stats
-    blocked_stat = ""
-    if unattempted:
-        blocked_stat = (
-            f'<div class="stat-box"><span class="stat-value">{unattempted:,}</span>'
-            '<span class="stat-label">Not Attempted</span></div>'
-        )
     stats_html = f"""
 <div class="theme-stats">
   <h3>Overall Results</h3>
   <div class="stats-grid">
     <div class="stat-box"><span class="stat-value">{num_themes}</span><span class="stat-label">Themes Tested</span></div>
     <div class="stat-box"><span class="stat-value">{total_responses}</span><span class="stat-label">Total Responses</span></div>
-    {blocked_stat}
     <div class="stat-box stat-complete"><span class="stat-value">{pct_complete:.1f}%</span><span class="stat-label">Complete</span></div>
     <div class="stat-box stat-evasive"><span class="stat-value">{pct_evasive:.1f}%</span><span class="stat-label">Evasive</span></div>
     <div class="stat-box stat-denial"><span class="stat-value">{pct_denial:.1f}%</span><span class="stat-label">Denial</span></div>
     <div class="stat-box stat-error"><span class="stat-value">{pct_error:.1f}%</span><span class="stat-label">Error</span></div>
-    {f'<div class="stat-box"><span class="stat-value">{pct_not_attempted:.1f}%</span><span class="stat-label">Not Attempted</span></div>' if unattempted else ''}
   </div>
-  <div class="overall-bar">{_verdict_bar_html({"complete": pct_complete, "evasive": pct_evasive, "denial": pct_denial, "error": pct_error, "not_attempted": pct_not_attempted})}</div>
+  <div class="overall-bar">{_verdict_bar_html({"complete": pct_complete, "evasive": pct_evasive, "denial": pct_denial, "error": pct_error})}</div>
 </div>
 """
 
@@ -2145,18 +2061,11 @@ def render_model_detail(model_id, meta, theme_stats_for_model, lab_metadata=None
         + "\n</div>\n"
     )
     seo_title = f"{model_id} \u2014 Refusal Rates & Censorship Scores | SpeechMap.AI"
-    if unattempted:
-        seo_desc = (
-            f"Blocked-run result for {model_name}: {total_complete} of {score_denominator} "
-            f"questions complete ({pct_complete:.1f}%). {unattempted} were not attempted "
-            "after provider access was restricted."
-        )
-    else:
-        seo_desc = (
-            f"How {model_name} handles controversial speech: answered {pct_complete:.1f}% of "
-            f"{total_responses} sensitive prompts completely, refused {pct_denial:.1f}%. "
-            f"Per-theme refusal breakdown on SpeechMap.AI."
-        )
+    seo_desc = (
+        f"How {model_name} handles controversial speech: answered {pct_complete:.1f}% of "
+        f"{total_responses} sensitive prompts completely, refused {pct_denial:.1f}%. "
+        f"Per-theme refusal breakdown on SpeechMap.AI."
+    )
     return _page_head(seo_title, canon, depth=depth, active_tab='models', description=seo_desc) + hero_html + intro_html + evaluation_note_html + info_section + stats_html + table + _page_foot(depth=depth)
 
 
@@ -2318,16 +2227,15 @@ def render_lab_standings_page(lab_standings, lab_metadata=None, model_summary=No
             roll = lab_rollup.setdefault(
                 cr,
                 {"n": 0.0, "count": 0, "latest": "",
-                 "agg": {"complete": 0.0, "evasive": 0.0, "denial": 0.0, "error": 0.0, "not_attempted": 0.0}},
+                 "agg": {"complete": 0.0, "evasive": 0.0, "denial": 0.0, "error": 0.0}},
             )
-            n = float(m.get("score_denominator") or m.get("num_responses") or 0)
+            n = float(m.get("num_responses") or 0)
             roll["n"] += n
             roll["count"] += 1
             roll["agg"]["complete"] += float(m.get("pct_complete_overall") or 0.0) * n
             roll["agg"]["evasive"] += float(m.get("pct_evasive") or 0.0) * n
             roll["agg"]["denial"] += float(m.get("pct_denial") or 0.0) * n
             roll["agg"]["error"] += float(m.get("pct_error") or 0.0) * n
-            roll["agg"]["not_attempted"] += float(m.get("pct_not_attempted") or 0.0) * n
             if rd > roll["latest"]:
                 roll["latest"] = rd
 
@@ -2446,16 +2354,15 @@ def render_lab_page(lab_key, models, standings_entry, rank, lab_metadata=None, d
 
     # Aggregate verdict mix, weighted by responses per model.
     tot = 0.0
-    agg = {"complete": 0.0, "evasive": 0.0, "denial": 0.0, "error": 0.0, "not_attempted": 0.0}
+    agg = {"complete": 0.0, "evasive": 0.0, "denial": 0.0, "error": 0.0}
     latest = ""
     for m in models:
-        n = float(m.get("score_denominator") or m.get("num_responses") or 0)
+        n = float(m.get("num_responses") or 0)
         tot += n
         agg["complete"] += float(m.get("pct_complete_overall") or 0.0) * n
         agg["evasive"] += float(m.get("pct_evasive") or 0.0) * n
         agg["denial"] += float(m.get("pct_denial") or 0.0) * n
         agg["error"] += float(m.get("pct_error") or 0.0) * n
-        agg["not_attempted"] += float(m.get("pct_not_attempted") or 0.0) * n
         rd = m.get("release_date") or ""
         if rd > latest:
             latest = rd
@@ -2557,8 +2464,7 @@ def render_lab_page(lab_key, models, standings_entry, rank, lab_metadata=None, d
         f'<div class="stat-box stat-evasive"><span class="stat-value">{pcts["evasive"]:.1f}%</span><span class="stat-label">Evasive</span></div>'
         f'<div class="stat-box stat-denial"><span class="stat-value">{pcts["denial"]:.1f}%</span><span class="stat-label">Denial</span></div>'
         f'<div class="stat-box stat-error"><span class="stat-value">{pcts["error"]:.1f}%</span><span class="stat-label">Error</span></div>'
-        + (f'<div class="stat-box"><span class="stat-value">{pcts["not_attempted"]:.1f}%</span><span class="stat-label">Not Attempted</span></div>' if pcts["not_attempted"] else '')
-        + "</div>"
+        "</div>"
         f'<div class="overall-bar">{_verdict_bar_html(pcts)}</div>'
         "</div>"
         + trajectory_html

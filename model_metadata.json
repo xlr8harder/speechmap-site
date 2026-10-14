@@ -423,3 +423,4 @@
 {"model_identifier": "mistralai/mistral-large-4-0", "creator": "mistralai", "model_name": "mistral-large-4-0", "model_family": "mistral-large-4", "release_date": "2026-10-06", "reasoning_model": true, "notes": "Medium reasoning via OpenRouter."}
 {"model_identifier": "anthropic/claude-haiku-5.5", "creator": "anthropic", "model_name": "claude-haiku-5.5", "model_family": "claude-haiku-5.5", "release_date": "2026-10-07", "reasoning_model": true, "notes": "Adaptive thinking at medium effort via OpenRouter."}
 {"model_identifier": "openai/gpt-6.1-sol", "creator": "openai", "model_name": "gpt-6.1-sol", "model_family": "gpt-6.1-sol", "release_date": "2026-09-29", "reasoning_model": true, "notes": "Medium reasoning via OpenRouter."}
+{"model_identifier": "google/gemini-4-argon", "creator": "google", "model_name": "gemini-4-argon", "model_family": "gemini-4-argon", "release_date": "2026-10-13", "reasoning_model": true, "notes": "Medium reasoning via OpenRouter."}
